@@ -1,0 +1,29 @@
+{
+  "name": "chatsocketio",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc ",
+    "watch": "tsc -w ",
+    "clean": "rimraf dist",
+    "prestart": "npm run clean && npm run build",
+    "start": "node dist/src/socket.js",
+    "test": "echo \"No tests yet...\""
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.1.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/socket.io": "^3.0.1"
+  }
+}
