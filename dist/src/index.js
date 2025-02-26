@@ -7,25 +7,42 @@ const socket_io_client_1 = require("socket.io-client");
 const readline_1 = __importDefault(require("readline"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-// Create Readline Interface for user input
+const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000"; // Socket.io server URL
+const socket = (0, socket_io_client_1.io)(SERVER_URL);
+// Create Readline Interface
 const rl = readline_1.default.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
-// Get Server URL from environment
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000";
-const socket = (0, socket_io_client_1.io)(SERVER_URL);
-const roomId = "room1";
+let room;
 const userId = "user1";
-// Login request
-socket.emit("login", { userId, password: "pass1" });
+const roomId = "room1";
+// Function to send messages
+const sendMessage = () => {
+    rl.question("> ", (message) => {
+        if (message.toLowerCase() === "exit") {
+            console.log("Exiting chat...");
+            socket.disconnect();
+            process.exit(0);
+        }
+        console.log("here", message, socket.id);
+        socket.emit("sendmessage", { roomId, sender: userId, message });
+        sendMessage();
+    });
+};
+// Connect to server
+socket.on("connect", () => {
+    console.log("Connected to chat server ✅");
+    // Login request
+    socket.emit("login", { userId, password: "pass1" });
+});
 // Handle successful login
 socket.on("login_success", (data) => {
     console.log(`✅ ${data.message}`);
     socket.emit("joinRoom", { roomId });
     sendMessage();
     // Send an initial message
-    socket.emit("message", { roomId, sender: userId, message: "Hello everyone!" });
+    socket.emit("sendmessage", { roomId, sender: userId, message: "Hello everyone!" });
     console.log("Successfully Joined ", { roomId });
 });
 // Handle failed login
@@ -33,40 +50,16 @@ socket.on("login_failed", (data) => {
     console.error(`❌ ${data.message}`);
     socket.disconnect();
 });
-// Handle incoming messages
-socket.on("message", (data) => {
-    console.log(`📩 Message from ${data.sender}: ${data.message}`);
-});
-// Handle connection errors
-socket.on("connect_error", (err) => {
-    console.error(`⚠️ Connection Error: ${err.message}`);
-});
-// Function to send messages
-const sendMessage = () => {
-    rl.question("> ", (message) => {
-        const trimmedMessage = message.trim();
-        if (trimmedMessage.toLowerCase() === "exit") {
-            console.log("👋 Exiting chat...");
-            rl.close();
-            socket.disconnect();
-            process.exit(0);
-        }
-        if (!trimmedMessage) {
-            sendMessage(); // Ignore empty messages
-            return;
-        }
-        socket.emit("message", { roomId, sender: userId, message: trimmedMessage });
-        sendMessage();
-    });
-};
-// Start chat after joining the room
-socket.on("room_joined", () => {
-    console.log(`🚪 Joined room: ${roomId}`);
-    sendMessage();
+// Listen for messages
+socket.on("recievemessage", (data) => {
+    console.log("recived", data);
+    if (data.sender !== userId) {
+        console.log(`\n${data.sender}: ${data.message}\n> `);
+    }
 });
 // Handle disconnection
 socket.on("disconnect", () => {
-    console.log("❌ Disconnected from server.");
+    console.log("Disconnected from server ❌");
     process.exit(0);
 });
 //# sourceMappingURL=index.js.map

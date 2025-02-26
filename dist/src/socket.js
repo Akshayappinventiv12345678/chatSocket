@@ -45,8 +45,7 @@ io.on("connection", (socket) => {
                 socket.join(roomId);
                 console.log(`User ${userId} joined room ${roomId}`);
             });
-            socket.on("message", async ({ roomId, message }) => {
-                io.to(roomId).emit("message", { userId, message });
+            socket.on("sendmessage", async ({ roomId, message }) => {
                 const newMessage = {
                     room: roomId,
                     sender: userId,
@@ -54,12 +53,18 @@ io.on("connection", (socket) => {
                     timestamp: new Date().toISOString(),
                     socketid: socket.id
                 };
+                console.log("emiiting by server ", roomId, newMessage);
+                io.to(roomId).emit("recievemessage", newMessage);
                 await (0, databasesync_1.publishData)(newMessage, roomId);
                 console.log(`Message from ${userId} in ${roomId}: ${message}`);
             });
             socket.on("disconnect", () => {
                 console.log(`User ${userId} disconnected.`);
             });
+            setTimeout(() => {
+                console.log("tiemr");
+                io.to("room1").emit("recievemessage", { roomId: "room1", sender: "Server", message: "Test message!" });
+            }, 5000);
         }
         else {
             console.log(`Authentication failed for user ${userId}`);

@@ -61,8 +61,8 @@ io.on("connection", (socket) => {
               console.log(`User ${userId} joined room ${roomId}`);
           });
 
-          socket.on("message", async ({ roomId, message }) => {
-              io.to(roomId).emit("message", { userId, message });
+          socket.on("sendmessage", async ({ roomId, message }) => {
+        
 
               const newMessage: Message = {
                 room:roomId,
@@ -71,6 +71,9 @@ io.on("connection", (socket) => {
                 timestamp: new Date().toISOString(),
                 socketid:socket.id
               };
+              console.log("emiiting by server ", roomId,newMessage)
+
+              io.to(roomId).emit("recievemessage", newMessage);
 
               
               await publishData(newMessage,roomId);
@@ -80,6 +83,11 @@ io.on("connection", (socket) => {
           socket.on("disconnect", () => {
               console.log(`User ${userId} disconnected.`);
           });
+
+          setTimeout(() => {
+            console.log("tiemr")
+            io.to("room1").emit("recievemessage", { roomId: "room1", sender: "Server", message: "Test message!" });
+          }, 5000);
 
       } else {
           console.log(`Authentication failed for user ${userId}`);
@@ -96,3 +104,4 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Socket Server running on port ${PORT}`));
 
 // publishData({"message":"trial"},"Room1").then(res=> console.log(res)).catch(err=>console.log(err))
+

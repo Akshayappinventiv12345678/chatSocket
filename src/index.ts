@@ -1,36 +1,57 @@
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import readline from "readline";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const SERVER_URL = process.env.SERVER_URL || "http://localhost:5000"; // Socket.io server URL
+const socket = io(SERVER_URL);
 // Define types for messages and events
 interface MessagePayload {
-    roomId: string;
-    sender: string;
-    message: string;
+  roomId: string;
+  sender: string;
+  message: string;
 }
 
 interface LoginResponse {
-    message: string;
+  message: string;
 }
 
-
-// Create Readline Interface for user input
+// Create Readline Interface
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-// Get Server URL from environment
-const SERVER_URL: string = process.env.SERVER_URL || "http://localhost:5000";
-const socket: Socket = io(SERVER_URL);
+let room: string;
 
-const roomId: string = "room1";
-const userId: string = "user1";
 
-// Login request
-socket.emit("login", { userId, password: "pass1" });
+const userId="user1"
+const roomId="room1"
+
+// Function to send messages
+const sendMessage = () => {
+  rl.question("> ", (message) => {
+    if (message.toLowerCase() === "exit") {
+      console.log("Exiting chat...");
+      socket.disconnect();
+      process.exit(0);
+    }
+    console.log("here", message,socket.id)
+
+    socket.emit("sendmessage", { roomId, sender: userId, message });
+    sendMessage();
+  });
+};
+
+// Connect to server
+socket.on("connect", () => {
+  console.log("Connected to chat server ✅");
+  // Login request
+  socket.emit("login", { userId, password: "pass1" });
+
+});
+
 
 // Handle successful login
 socket.on("login_success", (data: LoginResponse) => {
@@ -39,7 +60,7 @@ socket.on("login_success", (data: LoginResponse) => {
     sendMessage();
 
     // Send an initial message
-    socket.emit("message", { roomId, sender: userId, message: "Hello everyone!" });
+    socket.emit("sendmessage", { roomId, sender: userId, message: "Hello everyone!" });
     console.log("Successfully Joined ",{roomId})
 });
 
@@ -48,48 +69,16 @@ socket.on("login_failed", (data: LoginResponse) => {
     console.error(`❌ ${data.message}`);
     socket.disconnect();
 });
-
-// Handle incoming messages
-socket.on("message", (data: MessagePayload) => {
-    console.log(`📩 Message from ${data.sender}: ${data.message}`);
-});
-
-// Handle connection errors
-socket.on("connect_error", (err) => {
-    console.error(`⚠️ Connection Error: ${err.message}`);
-});
-
-
-// Function to send messages
-const sendMessage = (): void => {
-    rl.question("> ", (message: string) => {
-        const trimmedMessage = message.trim();
-
-        if (trimmedMessage.toLowerCase() === "exit") {
-            console.log("👋 Exiting chat...");
-            rl.close();
-            socket.disconnect();
-            process.exit(0);
-        }
-
-        if (!trimmedMessage) {
-            sendMessage(); // Ignore empty messages
-            return;
-        }
-
-        socket.emit("message", { roomId, sender: userId, message: trimmedMessage });
-        sendMessage();
-    });
-};
-
-// Start chat after joining the room
-socket.on("room_joined", () => {
-    console.log(`🚪 Joined room: ${roomId}`);
-    sendMessage();
+// Listen for messages
+socket.on("recievemessage", (data: any) => {
+  console.log("recived",data)
+  if (data.sender !== userId) {
+    console.log(`\n${data.sender}: ${data.message}\n> `);
+  }
 });
 
 // Handle disconnection
 socket.on("disconnect", () => {
-    console.log("❌ Disconnected from server.");
-    process.exit(0);
+  console.log("Disconnected from server ❌");
+  process.exit(0);
 });

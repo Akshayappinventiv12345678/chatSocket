@@ -8,7 +8,7 @@
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "start": "node dist/src/socket.js",
-    "client":"node dist/src/index.js",
+    "client":" npm run build && node dist/src/index.js",
     "test": "echo \"No tests yet...\""
   },
   "author": "",
